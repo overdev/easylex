@@ -29,7 +29,7 @@
 
 # region IMPORTS
 
-from jsom.main import JSOM
+from jsom.lib import JSOM
 from typing import Optional, Any, Callable
 
 # endregion (imports)

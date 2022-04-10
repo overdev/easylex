@@ -1,1 +1,1 @@
-jsom==0.1.0 @ https://github.com/overdev/jsom/releases/download/v0.1.0/jsom-0.1.0-py3-none-any.whl
+jsom==0.1.1 @ https://github.com/overdev/jsom/releases/download/v0.1.0/jsom-0.1.0-py3-none-any.whl
