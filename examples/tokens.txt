@@ -1,0 +1,7 @@
+// exemplo
+publico int x = 0;
+
+se (0b0100101000011 > 0.5)
+{
+    retorne 'sucesso';
+}

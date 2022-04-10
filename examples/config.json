@@ -1,0 +1,87 @@
+{
+  "whitespace": {
+    "include": false,
+    "chars": " \n\t"
+  },
+  "subkind_delimiter": ":",
+  "tokens": {
+    "(": "LPAREN",
+    ")": "RPAREN",
+    ",": "COMMA",
+    "=": "ASSIGN",
+    "<<": "LSHIFT",
+    ";": "SEMICOLON"
+  },
+  "delimiter": {
+    "chars": ",.;:([{}])"
+  },
+  "keyword": {
+    "kind": ["qualifier"],
+    "reserved": [
+      "se", "senão"
+    ],
+    "qualifier": [
+      "publico"
+    ]
+  },
+  "identifier": {
+    "max_length": 128
+  },
+  "string": {
+    "quote": {
+      "single": "'",
+      "double": "\""
+    },
+    "is_multiline": false,
+    "escape": {
+      "mark": "\\",
+      "chars": "ntbv\\",
+      "map": {
+        "n": "\n",
+        "t": "\t",
+        "b": "\b",
+        "\\": "\\"
+      }
+    }
+  },
+  "number": {
+    "separator": "_",
+    "integer": {
+      "base_chars": "box",
+      "base": {
+        "b": {
+          "digits": "01",
+          "name": "BINARY"
+        },
+        "o": {
+          "digits": "01234567",
+          "name": "OCTAL"
+        },
+        "x": {
+          "digits": "0123456789abcdef",
+          "name": "HEX"
+        }
+      }
+    },
+    "float": {
+      "scientific": false
+    }
+  },
+  "operator": {
+    "chars": "!%&*+-=/?|^~<>",
+    "max_length": 3
+  },
+  "comment": {
+    "include_doc": true,
+    "line": "//",
+    "block": {
+      "begin": "/*",
+      "end": "*/"
+    },
+    "doc_line": "///",
+    "doc_block": {
+      "begin": "/**",
+      "end": "*/"
+    }
+  }
+}
