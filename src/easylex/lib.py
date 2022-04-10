@@ -38,10 +38,12 @@ from typing import Optional, Any, Callable
 
 
 __all__ = [
+    'BaseToken',
     'Error',
     'F',
     'Lexer',
     'Source',
+    'SourceLn',
     'TokenStream',
     'UnexpectedCharError',
 ]
