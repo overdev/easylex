@@ -595,36 +595,3 @@ class TokenStream:
 
 # endregion (classes)
 # ---------------------------------------------------------
-# region FUNCTIONS
-
-
-def usage():
-    config: JSOM = JSOM.parse_file('../../examples/config.json')
-
-    class Token(BaseToken):
-        def __init__(self, **kwargs):
-            super().__init__(
-                kwargs.get('source'),
-                kwargs.get('pos'),
-                kwargs.get('kind'),
-                kwargs.get('value')
-            )
-            self.start: SourceLn | None = kwargs.get('start')
-            self.end: SourceLn | None = kwargs.get('end')
-
-        def __str__(self):
-            val = self.source.code[self.value] if isinstance(self.value, slice) else self.value
-            return f"[ {self.kind} '{val}' at {self.ln} ]"
-
-    lex: Lexer = Lexer(config, Source.load("../../examples/tokens.txt"))
-
-    tokens, error = lex.gen_tokens(Token)
-
-    if tokens:
-        for t in tokens:
-            print(t)
-    elif error:
-        print(f"{error.__class__.__name__} at {error.kwargs.get('_pos', 'Ln 1:1')}:\n\t{error.message}")
-
-
-# endregion (functions)
