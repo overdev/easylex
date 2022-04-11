@@ -30,7 +30,7 @@
 # region IMPORTS
 
 from jsom.lib import JSOM
-from typing import Optional, Any, Callable
+from typing import Optional, Any, Callable, TypeVar, Generic
 
 # endregion (imports)
 # ---------------------------------------------------------
@@ -53,6 +53,7 @@ __all__ = [
 # ---------------------------------------------------------
 # region CONSTANTS & ENUMS
 
+T = TypeVar('T')
 F = Callable[[...], "BaseToken"]
 
 # endregion (constants)
@@ -139,6 +140,10 @@ class Lexer:
         self._source: Source = source
         self._pos: SourceLn = SourceLn(source, -1, -1, 1, 1)
         self._char: str = ''
+
+    @property
+    def source(self) -> Source:
+        return self._source
 
     def _kind_subkind(self, kind: str, subkind: str | None) -> str | None:
         delim = self._config.get('subkind_delimiter')
@@ -422,16 +427,28 @@ class Lexer:
         return tokens, None
 
 
-class TokenStream:
+class TokenStream(Generic[T]):
 
     def __init__(self, tokens: list[BaseToken], config: JSOM, **handlers):
         self._config: JSOM = config
-        self._tokens: list[BaseToken] = tokens
+        self._tokens: list[BaseToken | T] = tokens
         self._index: int = -1
         self._expect_error: Callable[[str, SourceLn, str, str], None] | None = handlers.get('expect_error_callback')
 
     @property
-    def token(self) -> BaseToken:
+    def config(self) -> JSOM:
+        return self._config
+
+    @property
+    def source(self) -> Source:
+        return self._tokens[0].source
+
+    @property
+    def filename(self) -> str:
+        return self.source.filename
+
+    @property
+    def token(self) -> BaseToken | T:
         if not self.is_eof:
             return self._tokens[self._index]
         return self._tokens[-1]
@@ -439,15 +456,6 @@ class TokenStream:
     @property
     def is_eof(self) -> bool:
         return self._index >= len(self._tokens)
-
-    @property
-    def kind_subkind(self) -> tuple[str, str]:
-        kind = self.token.kind
-        subkind = ''
-        delim = self._config.get('subkind_delimiter')
-        if delim:
-            kind, subkind = kind.split(delim, 1)
-        return kind, subkind
 
     def next(self) -> bool:
         if not self.is_eof:
@@ -474,7 +482,7 @@ class TokenStream:
             return f"{a} or {b}"
 
     @staticmethod
-    def _locate(token: BaseToken) -> str:
+    def _locate(token: BaseToken| T) -> str:
         src = token.source.filename
         ln = token.ln
         return f"{src}, {ln}"
@@ -488,18 +496,16 @@ class TokenStream:
             self._expect_error(self._locate(self.token), self.token.ln, self.token.value, value)
 
     def expect_kind(self, kind: str) -> None:
-        tkind, _ = self.kind_subkind
-        if tkind == kind:
+        if self.token.kind.startswith(kind):
             self.next()
         elif self._expect_error:
-            self._expect_error(self._locate(self.token), self.token.ln, tkind, kind)
+            self._expect_error(self._locate(self.token), self.token.ln, self.token.kind, kind)
 
     def expect_subkind(self, subkind: str) -> None:
-        _, tskind = self.kind_subkind
-        if tskind == subkind:
+        if self.token.kind.endswith(subkind):
             self.next()
         elif self._expect_error:
-            self._expect_error(self._locate(self.token), self.token.ln, tskind, subkind)
+            self._expect_error(self._locate(self.token), self.token.ln, self.token.kind, subkind)
 
     def expect_any_token(self, *values: str) -> None:
         if self.token.value in values:
@@ -508,18 +514,20 @@ class TokenStream:
             self._expect_error(self._locate(self.token), self.token.ln, self.token.value, self._join(*values))
 
     def expect_any_kind(self, *kinds: str) -> None:
-        kind, _ = self.kind_subkind
-        if kind in kinds:
-            self.next()
-        elif self._expect_error:
-            self._expect_error(self._locate(self.token), self.token.ln, kind, self._join(*kinds))
+        for kind in kinds:
+            if self.token.kind.startswith(kind):
+                self.next()
+                return
+        if self._expect_error:
+            self._expect_error(self._locate(self.token), self.token.ln, self.token.kind, self._join(*kinds))
 
     def expect_any_subkind(self, *subkinds: str) -> None:
-        _, subkind = self.kind_subkind
-        if subkind in subkinds:
-            self.next()
-        elif self._expect_error:
-            self._expect_error(self._locate(self.token), self.token.ln, subkind, self._join(*subkinds))
+        for subkind in subkinds:
+            if self.token.kind.startswith(subkind):
+                self.next()
+                return
+        if self._expect_error:
+            self._expect_error(self._locate(self.token), self.token.ln, self.token.kind, self._join(*subkinds))
 
     # endregion (match_*)
 
@@ -532,15 +540,13 @@ class TokenStream:
         return False
 
     def match_kind(self, kind: str) -> bool:
-        tkind, _ = self.kind_subkind
-        if tkind == kind:
+        if self.token.kind.startswith(kind):
             self.next()
             return True
         return False
 
     def match_subkind(self, subkind: str) -> bool:
-        _, tskind = self.kind_subkind
-        if tskind == subkind:
+        if self.token.kind.endswith(subkind):
             self.next()
             return True
         return False
@@ -552,17 +558,17 @@ class TokenStream:
         return False
 
     def match_any_kind(self, *kinds: str) -> bool:
-        kind, _ = self.kind_subkind
-        if kind in kinds:
-            self.next()
-            return True
+        for kind in kinds:
+            if self.token.kind.startswith(kind):
+                self.next()
+                return True
         return False
 
     def match_any_subkind(self, *subkinds: str) -> bool:
-        _, subkind = self.kind_subkind
-        if subkind in subkinds:
-            self.next()
-            return True
+        for subkind in subkinds:
+            if self.token.kind.endswith(subkind):
+                self.next()
+                return True
         return False
 
     # endregion (match_*)
@@ -573,23 +579,25 @@ class TokenStream:
         return self.token.value == value
 
     def is_kind(self, kind: str) -> bool:
-        tkind, _ = self.kind_subkind
-        return tkind == kind
+        return self.token.kind.startswith(kind)
 
     def is_subkind(self, subkind: str) -> bool:
-        _, tskind = self.kind_subkind
-        return tskind == subkind
+        return self.token.kind.endswith(subkind)
 
     def is_any_token(self, *values: str) -> bool:
         return self.token.value in values
 
     def is_any_kind(self, *kinds: str) -> bool:
-        kind, _ = self.kind_subkind
-        return kind in kinds
+        for kind in kinds:
+            if self.token.kind.startswith(kind):
+                return True
+        return False
 
     def is_any_subkind(self, *subkinds: str) -> bool:
-        _, subkind = self.kind_subkind
-        return subkind in subkinds
+        for subkind in subkinds:
+            if self.token.kind.endswith(subkind):
+                return True
+        return False
 
     # endregion
 
